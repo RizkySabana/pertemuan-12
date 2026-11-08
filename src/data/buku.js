@@ -15,7 +15,7 @@ export const daftarBuku = [
     judul: "Laskar Pelangi",
     penulis: "Andrea Hirata",
     kategori: "Novel",
-    status: "Dipinjam",
+    status: "Tersedia",
     gambar: "/images/buku-laskar-pelangi.jpg",
     deskripsi:
       "Novel tentang perjuangan dan semangat anak-anak dalam meraih pendidikan.",
@@ -45,7 +45,7 @@ export const daftarBuku = [
     judul: "Bumi",
     penulis: "Tere Liye",
     kategori: "Novel",
-    status: "Dipinjam",
+    status: "Tersedia",
     gambar: "/images/buku-bumi.jpg",
     deskripsi:
       "Novel fantasi tentang petualangan dan dunia paralel yang penuh misteri.",
