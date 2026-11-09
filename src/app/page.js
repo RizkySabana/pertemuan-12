@@ -241,12 +241,12 @@ export default function Home() {
                   {/* Gambar Buku */}
                   <div className="relative mb-4 h-48 overflow-hidden rounded-lg bg-[#E8DCC4]">
                     <Image
-                      src={buku.gambar}
-                      alt={`Sampul buku ${buku.judul}`}
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
+                        src={buku.gambar}
+                        alt={`Sampul buku ${buku.judul}`}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
                   </div>
 
                   {/* Informasi Buku */}
