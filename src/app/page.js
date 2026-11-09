@@ -4,12 +4,14 @@
 import { useTema } from "@/context/TemaContext";
 import { useBukuStore } from "@/store/useBukuStore";
 import { usePinjamanStore } from "@/store/usePinjamanStore";
+import { Suspense } from "react";
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import StatistikBuku from "@/components/StatistikBuku";
 import KatalogBuku from "@/components/KatalogBuku";
 import Footer from "@/components/Footer";
+import NotifikasiAkses from "@/components/NotifikasiAkses";
 
 export default function Home() {
   const { tema } = useTema();
@@ -68,6 +70,9 @@ export default function Home() {
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
+        <Suspense fallback={null}>
+          <NotifikasiAkses />
+        </Suspense>
         <Hero />
 
         <StatistikBuku

@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { useTema } from "@/context/TemaContext";
 import { useBukuStore } from "@/store/useBukuStore";
@@ -30,15 +31,76 @@ export default function KelolaBuku() {
   const [penulis, setPenulis] = useState("");
   const [kategori, setKategori] = useState("");
   const [deskripsi, setDeskripsi] = useState("");
+  const [gambar, setGambar] = useState(
+    "/images/buku-atomic-habits.jpg"
+  );
   const [status, setStatus] = useState("Tersedia");
   const [idEdit, setIdEdit] = useState(null);
   const [pesan, setPesan] = useState("");
+
+  // State pencarian Open Library API
+  const [kataKunci, setKataKunci] = useState("");
+  const [hasilPencarian, setHasilPencarian] = useState([]);
+  const [sedangMencari, setSedangMencari] = useState(false);
+  const [errorCari, setErrorCari] = useState("");
+
+  async function cariBuku(e) {
+    e.preventDefault();
+
+    if (!kataKunci.trim()) {
+      setErrorCari("Masukkan judul atau nama penulis buku.");
+      return;
+    }
+
+    setSedangMencari(true);
+    setErrorCari("");
+    setHasilPencarian([]);
+
+    try {
+      const response = await fetch(
+        `/api/buku?q=${encodeURIComponent(kataKunci)}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.pesan || "Gagal mencari buku.");
+      }
+
+      setHasilPencarian(data.buku || []);
+
+      if (!data.buku || data.buku.length === 0) {
+        setErrorCari("Buku tidak ditemukan.");
+      }
+    } catch (error) {
+      setErrorCari(error.message || "Terjadi kesalahan saat mencari buku.");
+    } finally {
+      setSedangMencari(false);
+    }
+  }
+
+  function pilihBuku(buku) {
+    setJudul(buku.judul);
+    setPenulis(buku.penulis);
+    setKategori(buku.kategori);
+    setDeskripsi(buku.deskripsi);
+    setGambar(buku.gambar);
+    setStatus("Tersedia");
+    setIdEdit(null);
+    setPesan("Data buku dari Open Library berhasil dipilih.");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
 
   function resetForm() {
     setJudul("");
     setPenulis("");
     setKategori("");
     setDeskripsi("");
+    setGambar("/images/buku-atomic-habits.jpg");
     setStatus("Tersedia");
     setIdEdit(null);
   }
@@ -52,7 +114,7 @@ export default function KelolaBuku() {
       kategori,
       deskripsi,
       status,
-      gambar: "/images/buku-atomic-habits.jpg",
+      gambar,
     };
 
     if (idEdit !== null) {
@@ -72,6 +134,7 @@ export default function KelolaBuku() {
     setPenulis(buku.penulis);
     setKategori(buku.kategori);
     setDeskripsi(buku.deskripsi);
+    setGambar(buku.gambar);
     setStatus(buku.status);
     setPesan("");
   }
@@ -110,9 +173,103 @@ export default function KelolaBuku() {
         </h1>
 
         <p className="mb-8 text-sm">
-          Tambahkan, ubah, dan hapus koleksi buku perpustakaan.
+          Cari, tambahkan, ubah, dan hapus koleksi buku perpustakaan.
         </p>
 
+        {/* PENCARIAN OPEN LIBRARY API */}
+        <section
+          className={`mb-10 rounded-xl p-6 shadow-sm ${
+            tema === "gelap" ? "bg-gray-800" : "bg-white"
+          }`}
+        >
+          <h2 className="mb-2 text-xl font-bold">
+            Cari Buku dari Open Library
+          </h2>
+
+          <p className="mb-5 text-sm opacity-70">
+            Cari berdasarkan judul buku atau nama penulis.
+          </p>
+
+          <form onSubmit={cariBuku} className="flex flex-wrap gap-3">
+            <input
+              type="text"
+              value={kataKunci}
+              onChange={(e) => setKataKunci(e.target.value)}
+              placeholder="Contoh: Atomic Habits"
+              className={`min-w-0 flex-1 rounded-lg border p-3 ${warnaInput}`}
+            />
+
+            <button
+              type="submit"
+              disabled={sedangMencari}
+              className="rounded-lg bg-[#0F5257] px-6 py-3 font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {sedangMencari ? "Mencari..." : "Cari Buku"}
+            </button>
+          </form>
+
+          {errorCari && (
+            <p className="mt-4 text-sm font-semibold text-red-500">
+              {errorCari}
+            </p>
+          )}
+
+          {hasilPencarian.length > 0 && (
+            <div className="mt-6">
+              <h3 className="mb-4 font-bold">
+                Hasil Pencarian ({hasilPencarian.length})
+              </h3>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {hasilPencarian.map((buku) => (
+                  <div
+                    key={buku.id}
+                    className={`flex gap-4 rounded-xl border p-4 ${
+                      tema === "gelap"
+                        ? "border-gray-600 bg-gray-700"
+                        : "border-gray-200 bg-gray-50"
+                    }`}
+                  >
+                    <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-200">
+                      <Image
+                        src={buku.gambar}
+                        alt={`Sampul ${buku.judul}`}
+                        fill
+                        unoptimized
+                        sizes="96px"
+                        className="object-cover"
+                      />
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <h4 className="font-bold">
+                        {buku.judul}
+                      </h4>
+
+                      <p className="mt-1 text-sm opacity-70">
+                        {buku.penulis}
+                      </p>
+
+                      <p className="mt-1 text-xs opacity-70">
+                        {buku.kategori}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => pilihBuku(buku)}
+                        className="mt-auto self-start rounded-lg bg-[#0F5257] px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
+                      >
+                        Pilih Buku
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* FORM TAMBAH DAN EDIT BUKU */}
         <form
           onSubmit={simpanBuku}
           className={`mb-10 rounded-xl p-6 shadow-sm ${
@@ -193,6 +350,7 @@ export default function KelolaBuku() {
           )}
         </form>
 
+        {/* DAFTAR KOLEKSI BUKU */}
         <h2 className="mb-4 text-xl font-bold">
           Daftar Koleksi Buku ({daftarBuku.length})
         </h2>
@@ -207,9 +365,11 @@ export default function KelolaBuku() {
             >
               <div>
                 <h3 className="font-bold">{buku.judul}</h3>
+
                 <p className="text-sm opacity-70">
                   {buku.penulis} • {buku.kategori}
                 </p>
+
                 <p className="mt-1 text-xs">
                   Status: {buku.status}
                 </p>
