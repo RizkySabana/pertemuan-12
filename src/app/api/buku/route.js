@@ -15,7 +15,7 @@ export async function GET(request) {
 
     const url = new URL("https://openlibrary.org/search.json");
 
-    url.searchParams.set("q", kataKunci);
+    url.searchParams.set("q", kataKunci.trim());
     url.searchParams.set(
       "fields",
       "key,title,author_name,first_publish_year,cover_i,subject"
@@ -24,10 +24,16 @@ export async function GET(request) {
 
     const response = await fetch(url.toString(), {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
-      throw new Error("Gagal mengambil data dari Open Library.");
+      return NextResponse.json(
+        {
+          pesan: "Layanan Open Library sedang mengalami gangguan. Silakan coba lagi.",
+        },
+        { status: 502 }
+      );
     }
 
     const data = await response.json();
@@ -35,7 +41,9 @@ export async function GET(request) {
     const daftarBuku = (data.docs || []).map((item) => ({
       id: item.key,
       judul: item.title || "Judul tidak tersedia",
-      penulis: item.author_name?.join(", ") || "Penulis tidak diketahui",
+      penulis:
+        item.author_name?.join(", ") ||
+        "Penulis tidak diketahui",
       kategori: item.subject?.[0] || "Umum",
       deskripsi: item.first_publish_year
         ? `Pertama kali diterbitkan pada tahun ${item.first_publish_year}.`
@@ -52,12 +60,15 @@ export async function GET(request) {
   } catch (error) {
     console.error("Kesalahan Open Library API:", error);
 
+    const timeout = error.name === "TimeoutError";
+
     return NextResponse.json(
       {
-        pesan: "Terjadi kesalahan saat mencari buku.",
-        detail: error.message,
+        pesan: timeout
+          ? "Pencarian membutuhkan waktu terlalu lama. Silakan coba lagi."
+          : "Open Library tidak dapat dihubungi. Periksa koneksi internet dan coba lagi.",
       },
-      { status: 500 }
+      { status: timeout ? 504 : 503 }
     );
   }
 }

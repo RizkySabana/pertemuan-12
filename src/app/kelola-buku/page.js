@@ -34,7 +34,7 @@ export default function KelolaBuku() {
   const [gambar, setGambar] = useState(
     "/images/buku-atomic-habits.jpg"
   );
-  const [status, setStatus] = useState("Tersedia");
+  const [stokTotal, setStokTotal] = useState("5");
   const [idEdit, setIdEdit] = useState(null);
   const [pesan, setPesan] = useState("");
 
@@ -73,7 +73,9 @@ export default function KelolaBuku() {
         setErrorCari("Buku tidak ditemukan.");
       }
     } catch (error) {
-      setErrorCari(error.message || "Terjadi kesalahan saat mencari buku.");
+      setErrorCari(
+        error.message || "Terjadi kesalahan saat mencari buku."
+      );
     } finally {
       setSedangMencari(false);
     }
@@ -85,7 +87,7 @@ export default function KelolaBuku() {
     setKategori(buku.kategori);
     setDeskripsi(buku.deskripsi);
     setGambar(buku.gambar);
-    setStatus("Tersedia");
+    setStokTotal("5");
     setIdEdit(null);
     setPesan("Data buku dari Open Library berhasil dipilih.");
 
@@ -101,24 +103,42 @@ export default function KelolaBuku() {
     setKategori("");
     setDeskripsi("");
     setGambar("/images/buku-atomic-habits.jpg");
-    setStatus("Tersedia");
+    setStokTotal("5");
     setIdEdit(null);
   }
 
   function simpanBuku(e) {
     e.preventDefault();
 
+    const jumlahStok = Number(stokTotal);
+
+    if (
+      !Number.isInteger(jumlahStok) ||
+      jumlahStok < 0
+    ) {
+      setPesan("Jumlah stok harus berupa angka bulat minimal 0.");
+      return;
+    }
+
     const dataBuku = {
       judul,
       penulis,
       kategori,
       deskripsi,
-      status,
       gambar,
+      stokTotal: jumlahStok,
     };
 
     if (idEdit !== null) {
-      ubahBuku(idEdit, dataBuku);
+      const berhasil = ubahBuku(idEdit, dataBuku);
+
+      if (!berhasil) {
+        setPesan(
+          "Stok total tidak boleh lebih sedikit daripada jumlah buku yang sedang dipinjam."
+        );
+        return;
+      }
+
       setPesan("Data buku berhasil diperbarui.");
     } else {
       tambahBuku(dataBuku);
@@ -135,8 +155,13 @@ export default function KelolaBuku() {
     setKategori(buku.kategori);
     setDeskripsi(buku.deskripsi);
     setGambar(buku.gambar);
-    setStatus(buku.status);
+    setStokTotal(String(buku.stokTotal ?? 5));
     setPesan("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   function hapusDataBuku(id) {
@@ -305,14 +330,21 @@ export default function KelolaBuku() {
               className={`rounded-lg border p-3 ${warnaInput}`}
             />
 
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className={`rounded-lg border p-3 ${warnaInput}`}
-            >
-              <option value="Tersedia">Tersedia</option>
-              <option value="Dipinjam">Dipinjam</option>
-            </select>
+            <div>
+              <input
+                required
+                type="number"
+                min="0"
+                step="1"
+                value={stokTotal}
+                onChange={(e) => setStokTotal(e.target.value)}
+                placeholder="Jumlah stok buku"
+                className={`w-full rounded-lg border p-3 ${warnaInput}`}
+              />
+              <p className="mt-1 text-xs opacity-70">
+                Masukkan jumlah seluruh eksemplar buku.
+              </p>
+            </div>
 
             <textarea
               required
@@ -371,12 +403,21 @@ export default function KelolaBuku() {
                 </p>
 
                 <p className="mt-1 text-xs">
+                  Stok Total: {buku.stokTotal ?? 5}
+                </p>
+
+                <p className="text-xs">
+                  Stok Tersedia: {buku.stokTersedia ?? 5}
+                </p>
+
+                <p className="mt-1 text-xs">
                   Status: {buku.status}
                 </p>
               </div>
 
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => editBuku(buku)}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white"
                 >
@@ -384,6 +425,7 @@ export default function KelolaBuku() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => hapusDataBuku(buku.id)}
                   className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white"
                 >

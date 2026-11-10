@@ -1,10 +1,11 @@
 
 "use client";
 
+import { useCallback, useState, Suspense } from "react";
+
 import { useTema } from "@/context/TemaContext";
 import { useBukuStore } from "@/store/useBukuStore";
 import { usePinjamanStore } from "@/store/usePinjamanStore";
-import { Suspense } from "react";
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -12,51 +13,65 @@ import StatistikBuku from "@/components/StatistikBuku";
 import KatalogBuku from "@/components/KatalogBuku";
 import Footer from "@/components/Footer";
 import NotifikasiAkses from "@/components/NotifikasiAkses";
+import NotifikasiPeminjaman from "@/components/NotifikasiPeminjaman";
 
 export default function Home() {
   const { tema } = useTema();
 
+  const [notifikasi, setNotifikasi] = useState(null);
+
+  const tutupNotifikasi = useCallback(() => {
+    setNotifikasi(null);
+  }, []);
+
   const daftarBuku = useBukuStore(
     (state) => state.daftarBuku
-  );
-
-  const ubahBuku = useBukuStore(
-    (state) => state.ubahBuku
-  );
-
-  const daftarPinjaman = usePinjamanStore(
-    (state) => state.daftarPinjaman
   );
 
   const tambahPinjaman = usePinjamanStore(
     (state) => state.tambahPinjaman
   );
 
-  const totalTersedia = daftarBuku.filter(
-    (buku) => buku.status === "Tersedia"
-  ).length;
+  // Menghitung jumlah seluruh stok buku
+  const totalBuku = daftarBuku.reduce(
+    (total, buku) => total + (buku.stokTotal ?? 5),
+    0
+  );
 
-  const totalDipinjam = daftarBuku.filter(
-    (buku) => buku.status === "Dipinjam"
-  ).length;
+  // Menghitung jumlah stok yang masih tersedia
+  const totalTersedia = daftarBuku.reduce(
+    (total, buku) => total + (buku.stokTersedia ?? 5),
+    0
+  );
 
+  // Menghitung jumlah buku yang sedang dipinjam
+  const totalDipinjam = totalBuku - totalTersedia;
+
+  // Fungsi peminjaman buku
   function pinjamBuku(buku) {
-    const sudahDitambahkan = daftarPinjaman.some(
-      (item) => item.id === buku.id
-    );
+    const hasil = tambahPinjaman(buku);
 
-    if (
-      sudahDitambahkan ||
-      buku.status === "Dipinjam"
-    ) {
-      return;
+    if (hasil === "BERHASIL") {
+      setNotifikasi({
+        tipe: "sukses",
+        judul: "Peminjaman Berhasil!",
+        pesan: "Buku berhasil ditambahkan ke daftar pinjamanmu.",
+      });
+    } else if (hasil === "SUDAH_DIPINJAM") {
+      setNotifikasi({
+        tipe: "error",
+        judul: "Buku Sudah Dipinjam",
+        pesan:
+          "Kamu sudah meminjam buku dengan judul ini. Silakan kembalikan terlebih dahulu sebelum meminjamnya lagi.",
+      });
+    } else {
+      setNotifikasi({
+        tipe: "error",
+        judul: "Stok Buku Habis",
+        pesan:
+          "Maaf, stok buku ini sedang habis. Silakan coba lagi setelah tersedia.",
+      });
     }
-
-    tambahPinjaman(buku);
-
-    ubahBuku(buku.id, {
-      status: "Dipinjam",
-    });
   }
 
   return (
@@ -73,11 +88,12 @@ export default function Home() {
         <Suspense fallback={null}>
           <NotifikasiAkses />
         </Suspense>
+
         <Hero />
 
         <StatistikBuku
           tema={tema}
-          totalBuku={daftarBuku.length}
+          totalBuku={totalBuku}
           totalTersedia={totalTersedia}
           totalDipinjam={totalDipinjam}
         />
@@ -85,12 +101,17 @@ export default function Home() {
         <KatalogBuku
           tema={tema}
           daftarBuku={daftarBuku}
-          daftarPinjaman={daftarPinjaman}
           pinjamBuku={pinjamBuku}
         />
       </div>
 
       <Footer />
+
+      {/* Notifikasi peminjaman */}
+      <NotifikasiPeminjaman
+        notifikasi={notifikasi}
+        onClose={tutupNotifikasi}
+      />
     </main>
   );
 }

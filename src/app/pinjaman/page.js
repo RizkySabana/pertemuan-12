@@ -6,7 +6,6 @@ import Link from "next/link";
 
 import { useTema } from "@/context/TemaContext";
 import { usePinjamanStore } from "@/store/usePinjamanStore";
-import { useBukuStore } from "@/store/useBukuStore";
 
 export default function HalamanPinjaman() {
   const { tema } = useTema();
@@ -19,16 +18,14 @@ export default function HalamanPinjaman() {
     (state) => state.hapusPinjaman
   );
 
-  const ubahBuku = useBukuStore(
-    (state) => state.ubahBuku
-  );
-
   function kembalikanBuku(buku) {
-    hapusPinjaman(buku.id);
+    const berhasil = hapusPinjaman(
+      buku.idPinjaman ?? buku.id
+    );
 
-    ubahBuku(buku.id, {
-      status: "Tersedia",
-    });
+    if (berhasil) {
+      alert("Buku berhasil dikembalikan. Stok telah diperbarui.");
+    }
   }
 
   return (
@@ -89,9 +86,9 @@ export default function HalamanPinjaman() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
-            {daftarPinjaman.map((buku) => (
+            {daftarPinjaman.map((buku, index) => (
               <div
-                key={buku.id}
+                key={buku.idPinjaman ?? `${buku.id}-${index}`}
                 className={`flex gap-4 rounded-xl p-5 shadow-sm ${
                   tema === "gelap" ? "bg-gray-800" : "bg-white"
                 }`}
@@ -101,6 +98,7 @@ export default function HalamanPinjaman() {
                     src={buku.gambar}
                     alt={`Sampul buku ${buku.judul}`}
                     fill
+                    unoptimized
                     className="object-contain p-2"
                     sizes="112px"
                   />

@@ -8,7 +8,6 @@ import Link from "next/link";
 export default function KatalogBuku({
   tema,
   daftarBuku,
-  daftarPinjaman,
   pinjamBuku,
 }) {
   const [kataKunci, setKataKunci] = useState("");
@@ -47,9 +46,8 @@ export default function KatalogBuku({
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {bukuTampil.map((buku) => {
-          const sudahDitambahkan = daftarPinjaman.some(
-            (item) => item.id === buku.id
-          );
+          const stokTersedia = buku.stokTersedia ?? 5;
+          const stokHabis = stokTersedia <= 0;
 
           return (
             <div
@@ -65,6 +63,7 @@ export default function KatalogBuku({
                   src={buku.gambar}
                   alt={`Sampul buku ${buku.judul}`}
                   fill
+                  unoptimized
                   className="object-contain"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
@@ -101,15 +100,21 @@ export default function KatalogBuku({
                     : "border-gray-200"
                 }`}
               >
-                <span
-                  className={`text-sm font-semibold ${
-                    buku.status === "Tersedia"
-                      ? "text-green-600"
-                      : "text-orange-500"
-                  }`}
-                >
-                  {buku.status}
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`text-sm font-semibold ${
+                      stokHabis
+                        ? "text-red-500"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {stokHabis ? "Stok Habis" : "Tersedia"}
+                  </span>
+
+                  <span className="text-sm font-semibold">
+                    Stok: {stokTersedia}
+                  </span>
+                </div>
 
                 <Link
                   href={`/buku/${buku.id}`}
@@ -120,22 +125,16 @@ export default function KatalogBuku({
 
                 <button
                   onClick={() => pinjamBuku(buku)}
-                  disabled={
-                    sudahDitambahkan ||
-                    buku.status === "Dipinjam"
-                  }
+                  disabled={stokHabis}
                   className={`mt-2 w-full rounded-lg px-4 py-2 text-sm font-semibold ${
-                    sudahDitambahkan ||
-                    buku.status === "Dipinjam"
+                    stokHabis
                       ? "cursor-not-allowed bg-gray-400 text-white"
                       : "bg-[#D6A84F] text-gray-900 hover:bg-[#C39536]"
                   }`}
                 >
-                  {sudahDitambahkan
-                    ? "Sudah Ditambahkan"
-                    : buku.status === "Dipinjam"
-                      ? "Sedang Dipinjam"
-                      : "Tambah ke Pinjaman"}
+                  {stokHabis
+                    ? "Stok Habis"
+                    : "Tambah ke Pinjaman"}
                 </button>
               </div>
             </div>
